@@ -84,11 +84,10 @@ export default function LandingPage() {
             className="text-center"
           >
             <h1 className="text-5xl md:text-7xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
-              Master Your Coding Journey
+            Daily Goals, Daily Growth
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
-              Track your progress, solve challenges, and become a better programmer with our comprehensive coding practice platform.
-            </p>
+            Track your progress, tackle daily tasks, and become more organized with our comprehensive task management platform.            </p>
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="inline-block"
@@ -97,7 +96,7 @@ export default function LandingPage() {
                 to="/register"
                 className="px-8 py-4 text-lg rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition shadow-lg text-white"
               >
-                Start Coding Now
+               Your Daily Success Plan
               </Link>
             </motion.div>
           </motion.div>

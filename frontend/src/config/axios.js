@@ -6,11 +6,11 @@ const API_URL = 'https://taskmaster-api-39px.onrender.com';
 // Create axios instance with default config
 const instance = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
+  withCredentials: false, 
   headers: {
-    'Content-Type': 'application/json'
-  },
-  timeout: 10000 // 10 second timeout
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
 });
 
 // Add request interceptor
@@ -35,35 +35,19 @@ instance.interceptors.response.use(
   (error) => {
     console.error('Response error:', error);
     
-    // Handle network errors
-    if (!error.response) {
-      toast.error('Network error. Please check your connection and try again.');
-      return Promise.reject(new Error('Network error'));
+    // Handle different types of errors
+    if (error.response) {
+      // Server responded with error status
+      const message = error.response.data?.message || 'An error occurred';
+      toast.error(message);
+    } else if (error.request) {
+      // Request was made but no response
+      toast.error('Unable to connect to the server');
+    } else {
+      // Something else happened
+      toast.error('An error occurred');
     }
-
-    // Handle specific status codes
-    switch (error.response.status) {
-      case 400:
-        toast.error(error.response.data.message || 'Invalid request');
-        break;
-      case 401:
-        toast.error('Please login to continue');
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        break;
-      case 403:
-        toast.error('Access denied');
-        break;
-      case 404:
-        toast.error('Resource not found');
-        break;
-      case 500:
-        toast.error(error.response.data.message || 'Server error. Please try again later.');
-        break;
-      default:
-        toast.error('Something went wrong. Please try again.');
-    }
-
+    
     return Promise.reject(error);
   }
 );
