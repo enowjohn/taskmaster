@@ -3,11 +3,11 @@ import { toast } from 'react-hot-toast';
 
 // Create axios instance with default config
 const instance = axios.create({
-  baseURL: 'http://localhost:9000',
+  baseURL: import.meta.env.VITE_API_URL || 'https://taskmaster-api-39px.onrender.com',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   },
-  withCredentials: true,
   timeout: 10000 // 10 second timeout
 });
 
