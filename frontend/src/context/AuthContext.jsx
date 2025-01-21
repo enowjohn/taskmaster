@@ -1,55 +1,47 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from '../config/axios';
+import { toast } from 'react-hot-toast';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const checkAuth = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const response = await axios.get('/api/auth/me');
+        setUser(response.data);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        localStorage.removeItem('token');
+        setUser(null);
+      }
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     checkAuth();
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const response = await axios.get('/api/auth/me');
-        setUser(response.data);
-      }
-    } catch (error) {
-      console.error('Auth check error:', error);
-      localStorage.removeItem('token');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const login = async (email, password) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.post('/api/auth/login', {
-        email,
-        password
-      });
-      
-      if (response.data.token && response.data.user) {
-        localStorage.setItem('token', response.data.token);
-        setUser(response.data.user);
-        toast.success('Successfully logged in!');
-        return response.data;
-      } else {
-        throw new Error('Invalid response from server');
-      }
+      const response = await axios.post('/api/auth/login', { email, password });
+      localStorage.setItem('token', response.data.token);
+      setUser(response.data.user);
+      toast.success('Successfully logged in!');
+      return response.data;
     } catch (error) {
       console.error('Login error:', error);
       const message = error.response?.data?.message || 'Login failed. Please try again.';
       toast.error(message);
-      setError(error.response?.data?.message || 'Login failed');
+      setError(message);
       throw error;
     } finally {
       setLoading(false);
@@ -60,25 +52,16 @@ export function AuthProvider({ children }) {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.post('/api/auth/register', {
-        name,
-        email,
-        password
-      });
-      
-      if (response.data.token && response.data.user) {
-        localStorage.setItem('token', response.data.token);
-        setUser(response.data.user);
-        toast.success('Successfully registered!');
-        return response.data;
-      } else {
-        throw new Error('Invalid response from server');
-      }
+      const response = await axios.post('/api/auth/register', { name, email, password });
+      localStorage.setItem('token', response.data.token);
+      setUser(response.data.user);
+      toast.success('Successfully registered!');
+      return response.data;
     } catch (error) {
       console.error('Registration error:', error);
       const message = error.response?.data?.message || 'Registration failed. Please try again.';
       toast.error(message);
-      setError(error.response?.data?.message || 'Registration failed');
+      setError(message);
       throw error;
     } finally {
       setLoading(false);
@@ -97,8 +80,7 @@ export function AuthProvider({ children }) {
       console.error('Logout error:', error);
       const message = error.response?.data?.message || 'Logout failed';
       toast.error(message);
-      setError(error.response?.data?.message || 'Logout failed');
-      throw error;
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -111,6 +93,10 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

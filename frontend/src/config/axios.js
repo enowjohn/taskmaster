@@ -1,9 +1,11 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
+const API_URL = 'https://taskmaster-api-39px.onrender.com';
+
 // Create axios instance with default config
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://taskmaster-api-39px.onrender.com',
+  baseURL: API_URL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
