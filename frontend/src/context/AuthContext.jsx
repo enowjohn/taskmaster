@@ -7,6 +7,7 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     checkAuth();
@@ -29,6 +30,8 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await axios.post('/api/auth/login', {
         email,
         password
@@ -46,12 +49,17 @@ export function AuthProvider({ children }) {
       console.error('Login error:', error);
       const message = error.response?.data?.message || 'Login failed. Please try again.';
       toast.error(message);
+      setError(error.response?.data?.message || 'Login failed');
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const register = async (name, email, password) => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await axios.post('/api/auth/register', {
         name,
         email,
@@ -70,18 +78,34 @@ export function AuthProvider({ children }) {
       console.error('Registration error:', error);
       const message = error.response?.data?.message || 'Registration failed. Please try again.';
       toast.error(message);
+      setError(error.response?.data?.message || 'Registration failed');
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-    toast.success('Successfully logged out!');
+  const logout = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await axios.post('/api/auth/logout');
+      localStorage.removeItem('token');
+      setUser(null);
+      toast.success('Successfully logged out!');
+    } catch (error) {
+      console.error('Logout error:', error);
+      const message = error.response?.data?.message || 'Logout failed';
+      toast.error(message);
+      setError(error.response?.data?.message || 'Logout failed');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, error, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

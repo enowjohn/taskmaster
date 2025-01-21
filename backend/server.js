@@ -10,9 +10,12 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://taskmaster-enowjohn.vercel.app', 'https://taskmaster-git-feature-taskmaster-enowjohn.vercel.app'] 
-    : ['http://localhost:5173', 'http://localhost:3000'],
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://taskmaster-git-master-enow-john-enowbis-projects.vercel.app',
+    'https://taskmaster-enowjohn.vercel.app'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
