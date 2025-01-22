@@ -10,10 +10,11 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'https://taskmaster-git-master-enow-john-enowbis-projects.vercel.app', 'https://taskmaster-enowjohn.vercel.app'],
+  origin: ['http://localhost:3000', 'https://taskmaster-app.onrender.com'],
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Access-Control-Allow-Origin']
 }));
 
 // Handle preflight requests
