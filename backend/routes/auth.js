@@ -4,6 +4,17 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
+// Debug middleware
+router.use((req, res, next) => {
+  console.log('Auth Route:', {
+    method: req.method,
+    url: req.url,
+    body: req.body,
+    headers: req.headers
+  });
+  next();
+});
+
 // Register
 router.post('/register', async (req, res) => {
   try {

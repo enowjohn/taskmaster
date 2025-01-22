@@ -1,65 +1,65 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const auth = require('./middleware/auth');
+const http = require('http');
 const path = require('path');
+const auth = require('./middleware/auth');
+require('dotenv').config();
 
-dotenv.config();
 const app = express();
 
-// CORS configuration
+// Debug middleware
+app.use((req, res, next) => {
+  console.log('Request:', {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    body: req.body
+  });
+  next();
+});
+
+// Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'https://taskmaster-git-master-enow-john-enowbis-projects.vercel.app', 'https://taskmaster-enowjohn.vercel.app'],
+  origin: 'http://localhost:3000',
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Handle preflight requests
-app.options('*', cors());
-
-// Body parser middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-  });
-}
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  next();
+});
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB Atlas'))
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  });
+// Test route
+app.post('/api/test', (req, res) => {
+  console.log('Test endpoint hit:', req.body);
+  res.json({ message: 'Test endpoint working' });
+});
 
-// Models
-const Task = require('./models/Task');
-const Comment = require('./models/Comment');
-const CodingProblem = require('./models/CodingProblem');
+// Routes
+const authRoutes = require('./routes/auth');
+const taskRoutes = require('./routes/tasks');
+const dailyTaskRoutes = require('./routes/dailyTasks');
+const problemRoutes = require('./routes/problems');
+const commentRoutes = require('./routes/comments');
+const messageRoutes = require('./routes/messages');
 
-// Public routes
-app.use('/api/auth', require('./routes/auth'));
-
-// Protected routes
-app.use('/api/tasks', auth, require('./routes/tasks'));
-app.use('/api/problems', auth, require('./routes/problems'));
-app.use('/api/comments', auth, require('./routes/comments'));
+app.use('/api/auth', authRoutes);
+app.use('/api/tasks', auth, taskRoutes);
+app.use('/api/daily-tasks', auth, dailyTaskRoutes);
+app.use('/api/problems', auth, problemRoutes);
+app.use('/api/comments', auth, commentRoutes);
+app.use('/api/messages', auth, messageRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
 });
 
 // Error handler
@@ -71,30 +71,23 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 9000;
+// Create HTTP server
+const server = http.createServer(app);
 
-const startServer = async () => {
-  try {
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
+// WebSocket setup
+const setupWebSocket = require('./websocket');
+const wss = setupWebSocket(server);
 
-    server.on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use. Please try:
-        1. Stop any other servers that might be running
-        2. Wait a few seconds and try again
-        3. Or modify the PORT in .env file to use a different port`);
-        process.exit(1);
-      } else {
-        console.error('Server error:', err);
-        process.exit(1);
-      }
+// Connect to MongoDB and start server
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log('Connected to MongoDB Atlas');
+    const PORT = process.env.PORT || 9000;
+    server.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
     });
-  } catch (err) {
-    console.error('Failed to start server:', err);
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
     process.exit(1);
-  }
-};
-
-startServer();
+  });

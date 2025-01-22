@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link, useNavigate, useLocation, Routes, Route } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import {
   HomeIcon,
   CodeBracketIcon,
@@ -13,6 +13,10 @@ import {
 import { motion } from 'framer-motion';
 import DailyTaskForm from '../components/DailyTaskForm';
 import DailyTaskList from '../components/DailyTaskList';
+import Tasks from '../components/Tasks';
+import Messages from '../components/Messages';
+import Profile from '../components/Profile';
+import CodingProblems from '../components/CodingProblems';
 import { toast } from 'react-hot-toast';
 import axios from '../config/axios';
 
@@ -26,7 +30,6 @@ const navigation = [
 ];
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
   const [dailyTasks, setDailyTasks] = useState([]);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -50,7 +53,6 @@ const Dashboard = () => {
       const response = await axios.post('/api/daily-tasks', taskData);
       setDailyTasks([...dailyTasks, response.data]);
       toast.success('Task created successfully');
-      // Send email notification here
       await sendEmailNotification(response.data);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create task');
@@ -110,65 +112,56 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'overview':
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h1 className="text-2xl font-bold mb-4">Welcome back, {user?.name}!</h1>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-blue-700">Active Tasks</h3>
-                  <p className="text-2xl mt-2">{dailyTasks.filter(t => t.status === 'in_progress').length}</p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-green-700">Completed Tasks</h3>
-                  <p className="text-2xl mt-2">{dailyTasks.filter(t => t.status === 'completed').length}</p>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-purple-700">Pending Reviews</h3>
-                  <p className="text-2xl mt-2">{dailyTasks.filter(t => t.status === 'pending').length}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Recent Tasks</h2>
-              <DailyTaskList
-                tasks={dailyTasks.slice(0, 5)}
-                onUpdateTask={handleTaskUpdate}
-                onApproveTask={handleTaskApproval}
-                onRejectTask={handleTaskRejection}
-              />
-            </div>
+  const Overview = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h1 className="text-2xl font-bold mb-4">Welcome back, {user?.name}!</h1>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h3 className="font-semibold text-blue-700">Active Tasks</h3>
+            <p className="text-2xl mt-2">{dailyTasks.filter(t => t.status === 'in_progress').length}</p>
           </div>
-        );
-
-      case 'daily-tasks':
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-xl font-bold mb-4">Create New Task</h2>
-              <DailyTaskForm onSubmit={handleTaskSubmit} />
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-xl font-bold mb-4">All Tasks</h2>
-              <DailyTaskList
-                tasks={dailyTasks}
-                onUpdateTask={handleTaskUpdate}
-                onApproveTask={handleTaskApproval}
-                onRejectTask={handleTaskRejection}
-              />
-            </div>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h3 className="font-semibold text-green-700">Completed Tasks</h3>
+            <p className="text-2xl mt-2">{dailyTasks.filter(t => t.status === 'completed').length}</p>
           </div>
-        );
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <h3 className="font-semibold text-purple-700">Pending Reviews</h3>
+            <p className="text-2xl mt-2">{dailyTasks.filter(t => t.status === 'pending').length}</p>
+          </div>
+        </div>
+      </div>
 
-      default:
-        return null;
-    }
-  };
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold mb-4">Recent Tasks</h2>
+        <DailyTaskList
+          tasks={dailyTasks.slice(0, 5)}
+          onUpdateTask={handleTaskUpdate}
+          onApproveTask={handleTaskApproval}
+          onRejectTask={handleTaskRejection}
+        />
+      </div>
+    </div>
+  );
+
+  const DailyTasks = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold mb-4">Create New Task</h2>
+        <DailyTaskForm onSubmit={handleTaskSubmit} />
+      </div>
+
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold mb-4">All Tasks</h2>
+        <DailyTaskList
+          tasks={dailyTasks}
+          onUpdateTask={handleTaskUpdate}
+          onApproveTask={handleTaskApproval}
+          onRejectTask={handleTaskRejection}
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -192,7 +185,6 @@ const Dashboard = () => {
                           ? 'bg-gray-900 text-white'
                           : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                       } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
-                      onClick={() => setActiveTab(item.name.toLowerCase())}
                     >
                       <item.icon
                         className={`${
@@ -206,7 +198,7 @@ const Dashboard = () => {
               </nav>
             </div>
             {/* User profile and logout */}
-            <div className="flex flex-shrink-0 bg-gray-700 p-4">
+            <div className="flex-shrink-0 bg-gray-700 p-4">
               <div className="group block w-full flex-shrink-0">
                 <div className="flex items-center">
                   <div>
@@ -233,17 +225,18 @@ const Dashboard = () => {
         </div>
 
         {/* Main content */}
-        <div className="md:pl-64 flex-1">
+        <div className="md:pl-64 flex flex-col flex-1">
           <main className="flex-1">
             <div className="py-6">
-              <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {renderContent()}
-                </motion.div>
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+                <Routes>
+                  <Route path="/" element={<Overview />} />
+                  <Route path="/tasks" element={<Tasks />} />
+                  <Route path="/daily-tasks" element={<DailyTasks />} />
+                  <Route path="/messages" element={<Messages />} />
+                  <Route path="/problems" element={<CodingProblems />} />
+                  <Route path="/profile" element={<Profile />} />
+                </Routes>
               </div>
             </div>
           </main>

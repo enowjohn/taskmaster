@@ -1,8 +1,8 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import axios from '../config/axios';
+import { createContext, useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import axios from '../config/axios';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -68,22 +68,10 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      await axios.post('/api/auth/logout');
-      localStorage.removeItem('token');
-      setUser(null);
-      toast.success('Successfully logged out!');
-    } catch (error) {
-      console.error('Logout error:', error);
-      const message = error.response?.data?.message || 'Logout failed';
-      toast.error(message);
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+    toast.success('Successfully logged out');
   };
 
   return (
@@ -92,11 +80,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};

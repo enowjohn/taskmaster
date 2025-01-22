@@ -49,7 +49,7 @@ router.get('/conversations', async (req, res) => {
   }
 });
 
-// Get messages between current user and another user
+// Get messages between two users
 router.get('/:userId', async (req, res) => {
   try {
     const messages = await Message.find({
@@ -57,10 +57,7 @@ router.get('/:userId', async (req, res) => {
         { sender: req.user._id, recipient: req.params.userId },
         { sender: req.params.userId, recipient: req.user._id }
       ]
-    })
-    .sort({ createdAt: 1 })
-    .populate('sender', 'name email')
-    .populate('recipient', 'name email');
+    }).sort({ createdAt: 1 });
 
     res.json(messages);
   } catch (error) {
@@ -72,7 +69,7 @@ router.get('/:userId', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { recipientId, content } = req.body;
-
+    
     const message = new Message({
       sender: req.user._id,
       recipient: recipientId,
@@ -80,23 +77,9 @@ router.post('/', async (req, res) => {
     });
 
     await message.save();
-
-    const populatedMessage = await Message.findById(message._id)
-      .populate('sender', 'name email')
-      .populate('recipient', 'name email');
-
-    // Notify through WebSocket if recipient is connected
-    const recipientSocket = req.app.get('wsClients').get(recipientId);
-    if (recipientSocket) {
-      recipientSocket.send(JSON.stringify({
-        type: 'message',
-        message: populatedMessage
-      }));
-    }
-
-    res.status(201).json(populatedMessage);
+    res.status(201).json(message);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 
