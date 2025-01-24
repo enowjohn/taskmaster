@@ -4,25 +4,54 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const auth = require('./middleware/auth');
 const path = require('path');
+const { createServer } = require('http');
+const { initializeSocket } = require('./services/socket');
+const passport = require('passport');
 
+// Load environment variables
 dotenv.config();
+
+// Initialize Express app
 const app = express();
+const httpServer = createServer(app);
+
+// Initialize Socket.IO
+initializeSocket(httpServer);
 
 // CORS configuration
-app.use(cors({
-  origin: ['http://localhost:3000', 'https://taskmaster-app.onrender.com'],
+const corsOptions = {
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173', 
+      'https://taskmaster-app.onrender.com',
+      'https://taskmaster-api-39px.onrender.com'
+    ];
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Access-Control-Allow-Origin']
-}));
+};
 
-// Handle preflight requests
-app.options('*', cors());
-
-// Body parser middleware
+// Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Initialize Passport
+require('./config/passport');
+app.use(passport.initialize());
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -32,9 +61,25 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// Create uploads directory if it doesn't exist
+const fs = require('fs');
+const uploadDir = path.join(__dirname, 'uploads', 'profiles');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB Atlas'))
+  .then(async () => {
+    console.log('Connected to MongoDB Atlas');
+    // Test the connection
+    try {
+      await mongoose.connection.db.admin().ping();
+      console.log('MongoDB connection is healthy');
+    } catch (error) {
+      console.error('MongoDB connection test failed:', error);
+    }
+  })
   .catch(err => {
     console.error('MongoDB connection error:', err);
     process.exit(1);
@@ -44,6 +89,7 @@ mongoose.connect(process.env.MONGODB_URI)
 const Task = require('./models/Task');
 const Comment = require('./models/Comment');
 const CodingProblem = require('./models/CodingProblem');
+const Message = require('./models/Message');
 
 // Public routes
 app.use('/api/auth', require('./routes/auth'));
@@ -52,6 +98,9 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tasks', auth, require('./routes/tasks'));
 app.use('/api/problems', auth, require('./routes/problems'));
 app.use('/api/comments', auth, require('./routes/comments'));
+app.use('/api/daily-tasks', auth, require('./routes/daily-tasks'));
+app.use('/api/users', auth, require('./routes/users'));
+app.use('/api/messages', auth, require('./routes/messages'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -65,37 +114,38 @@ app.get('/health', (req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('Error details:', {
+    message: err.message,
+    stack: err.stack,
+    name: err.name,
+    code: err.code,
+    path: req.path,
+    method: req.method,
+    body: req.body
+  });
+
+  // Handle specific error types
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({ 
+      message: 'Validation Error', 
+      errors: Object.values(err.errors).map(e => e.message)
+    });
+  }
+
+  if (err.name === 'MongoError' || err.name === 'MongoServerError') {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: 'Duplicate key error' });
+    }
+  }
+
   res.status(500).json({ 
     message: 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred'
   });
 });
 
-const PORT = process.env.PORT || 9000;
-
-const startServer = async () => {
-  try {
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-
-    server.on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use. Please try:
-        1. Stop any other servers that might be running
-        2. Wait a few seconds and try again
-        3. Or modify the PORT in .env file to use a different port`);
-        process.exit(1);
-      } else {
-        console.error('Server error:', err);
-        process.exit(1);
-      }
-    });
-  } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  }
-};
-
-startServer();
+// Start server
+const PORT = process.env.PORT || 5000;
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

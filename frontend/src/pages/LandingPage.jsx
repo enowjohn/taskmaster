@@ -195,7 +195,7 @@ export default function LandingPage() {
             <a href="#" className="text-gray-400 hover:text-white transition">Features</a>
             <a href="#" className="text-gray-400 hover:text-white transition">Contact</a>
             <a
-              href="https://github.com"
+              href="https://github.com/enowjohn"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-white transition"

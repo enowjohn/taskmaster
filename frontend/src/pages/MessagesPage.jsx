@@ -1,119 +1,69 @@
-import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from '../config/axios';
 import { toast } from 'react-hot-toast';
-import {
-  Card,
-  TextField,
-  Button,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  Paper,
-  Box,
-  Divider,
-} from '@mui/material';
-import { Send as SendIcon } from '@mui/icons-material';
+import { useAuth } from '../context/AuthContext';
 
-export default function MessagesPage() {
-  const [conversations, setConversations] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [message, setMessage] = useState('');
+const MessagesPage = () => {
   const [messages, setMessages] = useState([]);
   const [users, setUsers] = useState([]);
-  const { user } = useAuth();
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef(null);
-  const ws = useRef(null);
+  const { user } = useAuth();
 
-  // Connect to WebSocket
   useEffect(() => {
-    ws.current = new WebSocket(`ws://localhost:9000/ws?userId=${user?._id}`);
-
-    ws.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'message') {
-        setMessages(prev => [...prev, data.message]);
-        scrollToBottom();
-      }
-    };
-
-    return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
-    };
-  }, [user?._id]);
-
-  // Fetch users
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await axios.get('/api/users');
-        setUsers(response.data.filter(u => u._id !== user?._id));
-      } catch (error) {
-        toast.error('Failed to fetch users');
-      }
-    };
     fetchUsers();
-  }, [user]);
-
-  // Fetch conversations
-  useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const response = await axios.get('/api/messages/conversations');
-        setConversations(response.data);
-      } catch (error) {
-        toast.error('Failed to fetch conversations');
-      }
-    };
-    fetchConversations();
   }, []);
 
-  // Fetch messages when selecting a user
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (selectedUser) {
-        try {
-          const response = await axios.get(`/api/messages/${selectedUser._id}`);
-          setMessages(response.data);
-          scrollToBottom();
-        } catch (error) {
-          toast.error('Failed to fetch messages');
-        }
-      }
-    };
-    fetchMessages();
+    if (selectedUser) {
+      fetchMessages(selectedUser._id);
+    }
   }, [selectedUser]);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSendMessage = async () => {
-    if (!message.trim() || !selectedUser) return;
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('/api/users');
+      const filteredUsers = response.data.filter(u => u._id !== user._id);
+      setUsers(filteredUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to fetch users');
+    }
+  };
+
+  const fetchMessages = async (userId) => {
+    try {
+      const response = await axios.get(`/api/messages/${userId}`);
+      setMessages(response.data);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      toast.error('Failed to fetch messages');
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedUser) return;
 
     try {
       const response = await axios.post('/api/messages', {
         recipientId: selectedUser._id,
-        content: message
+        content: newMessage
       });
-
-      setMessages(prev => [...prev, response.data]);
-      setMessage('');
-      scrollToBottom();
-
-      // Send through WebSocket
-      if (ws.current) {
-        ws.current.send(JSON.stringify({
-          type: 'message',
-          message: response.data
-        }));
-      }
+      setMessages([...messages, response.data]);
+      setNewMessage('');
+      toast.success('Message sent successfully');
     } catch (error) {
+      console.error('Error sending message:', error);
       toast.error('Failed to send message');
     }
   };
@@ -126,104 +76,98 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)]">
-      <div className="flex h-full gap-4">
-        {/* Users/Conversations List */}
-        <Card className="w-1/4 overflow-hidden">
-          <Typography variant="h6" className="p-4 bg-gray-100">
-            Conversations
-          </Typography>
-          <Divider />
-          <List className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 10rem)' }}>
-            {users.map((u) => (
-              <ListItem
-                key={u._id}
-                button
-                selected={selectedUser?._id === u._id}
-                onClick={() => setSelectedUser(u)}
-              >
-                <ListItemAvatar>
-                  <Avatar>{u.name[0]}</Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={u.name}
-                  secondary={u.email}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </Card>
-
-        {/* Messages */}
-        <Card className="flex-1 flex flex-col">
-          {selectedUser ? (
-            <>
-              {/* Header */}
-              <Box className="p-4 bg-gray-100">
-                <Typography variant="h6">{selectedUser.name}</Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {selectedUser.email}
-                </Typography>
-              </Box>
-              <Divider />
-
-              {/* Messages */}
-              <Box
-                className="flex-1 overflow-y-auto p-4"
-                style={{ maxHeight: 'calc(100vh - 16rem)' }}
-              >
-                {messages.map((msg, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${msg.sender === user?._id ? 'justify-end' : 'justify-start'} mb-4`}
-                  >
-                    <Paper
-                      className={`p-2 px-4 max-w-[70%] ${
-                        msg.sender === user?._id ? 'bg-blue-100' : 'bg-gray-100'
-                      }`}
-                    >
-                      <Typography variant="body1">{msg.content}</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {formatTime(msg.createdAt)}
-                      </Typography>
-                    </Paper>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </Box>
-
-              {/* Message Input */}
-              <Box className="p-4 bg-gray-50">
-                <div className="flex gap-2">
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder="Type a message..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    endIcon={<SendIcon />}
-                    onClick={handleSendMessage}
-                    disabled={!message.trim()}
-                  >
-                    Send
-                  </Button>
-                </div>
-              </Box>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <Typography variant="body1" color="textSecondary">
-                Select a conversation to start messaging
-              </Typography>
+    <div className="max-w-6xl mx-auto p-4">
+      <div className="bg-white rounded-lg shadow-lg h-[calc(100vh-8rem)]">
+        <div className="grid grid-cols-4 h-full">
+          {/* Users List */}
+          <div className="col-span-1 border-r">
+            <div className="p-4 border-b">
+              <h2 className="text-lg font-semibold">Conversations</h2>
             </div>
-          )}
-        </Card>
+            <div className="overflow-y-auto h-[calc(100%-4rem)]">
+              {users.map(u => (
+                <div
+                  key={u._id}
+                  onClick={() => setSelectedUser(u)}
+                  className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                    selectedUser?._id === u._id ? 'bg-blue-50' : ''
+                  }`}
+                >
+                  <div className="font-medium">{u.name}</div>
+                  <div className="text-sm text-gray-500">{u.email}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Messages Area */}
+          <div className="col-span-3 flex flex-col h-full">
+            {selectedUser ? (
+              <>
+                {/* Selected User Header */}
+                <div className="p-4 border-b">
+                  <h3 className="text-lg font-semibold">{selectedUser.name}</h3>
+                  <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {messages.map(message => (
+                    <div
+                      key={message._id}
+                      className={`flex ${message.sender._id === user._id ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[70%] rounded-lg p-3 ${
+                          message.sender._id === user._id
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100'
+                        }`}
+                      >
+                        <p>{message.content}</p>
+                        <p className={`text-xs mt-1 ${
+                          message.sender._id === user._id
+                            ? 'text-blue-100'
+                            : 'text-gray-500'
+                        }`}>
+                          {formatTime(message.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Message Input */}
+                <form onSubmit={handleSendMessage} className="p-4 border-t">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type a message..."
+                      className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newMessage.trim()}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                Select a user to start messaging
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default MessagesPage;

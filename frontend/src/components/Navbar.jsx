@@ -1,41 +1,46 @@
-import { AppBar, Toolbar, Typography, Button } from '@mui/material';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import TaskIcon from '@mui/icons-material/Task';
-import CodeIcon from '@mui/icons-material/Code';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
+  const { user } = useAuth();
+
   return (
-    <AppBar position="static">
-      <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Task Manager
-        </Typography>
-        <Button
-          color="inherit"
-          component={Link}
-          to="/"
-          startIcon={<TaskIcon />}
-        >
-          Tasks
-        </Button>
-        <Button
-          color="inherit"
-          component={Link}
-          to="/problems"
-          startIcon={<CodeIcon />}
-        >
-          Coding Problems
-        </Button>
-        <Button
-          color="secondary"
-          variant="contained"
-          component={Link}
-          to="/new-task"
-        >
-          New Task
-        </Button>
-      </Toolbar>
-    </AppBar>
+    <nav className="bg-white shadow-md">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            {user && (
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                  {user.name?.[0] || '?'}
+                </div>
+                <span className="text-gray-700">{user.name}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center">
+            {!user ? (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/login"
+                  className="text-gray-700 hover:text-blue-600 transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Register
+                </Link>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </nav>
   );
 };
 

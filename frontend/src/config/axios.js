@@ -1,16 +1,19 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-const API_URL = 'https://taskmaster-api-39px.onrender.com';
+const API_URL = 'http://localhost:9000';
 
 // Create axios instance with default config
 const instance = axios.create({
   baseURL: API_URL,
-  withCredentials: false, 
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
-  }
+  },
+  transformRequest: [(data) => {
+    return JSON.stringify(data);
+  }],
+  withCredentials: true
 });
 
 // Add request interceptor
@@ -24,7 +27,6 @@ instance.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -33,20 +35,16 @@ instance.interceptors.request.use(
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('Response error:', error);
+    const message = error.response?.data?.message || 'An error occurred';
     
-    // Handle different types of errors
-    if (error.response) {
-      // Server responded with error status
-      const message = error.response.data?.message || 'An error occurred';
-      toast.error(message);
-    } else if (error.request) {
-      // Request was made but no response
-      toast.error('Unable to connect to the server');
-    } else {
-      // Something else happened
-      toast.error('An error occurred');
+    // Handle unauthorized errors
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
     }
+    
+    // Show error toast
+    // toast.error(message);
     
     return Promise.reject(error);
   }

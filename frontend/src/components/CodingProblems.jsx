@@ -1,260 +1,179 @@
-import { useState, useEffect } from 'react';
-import {
-  Container,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  TextField,
-  Box,
-  Chip,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-} from '@mui/material';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import axios from '../config/axios';
+import { toast } from 'react-hot-toast';
 
 const CodingProblems = () => {
   const [problems, setProblems] = useState([]);
-  const [platform, setPlatform] = useState('all');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [newProblem, setNewProblem] = useState({
     title: '',
-    platform: 'leetcode',
+    description: '',
     difficulty: 'medium',
-    link: '',
-    assignedTo: '',
+    category: 'algorithms'
   });
 
   useEffect(() => {
     fetchProblems();
-  }, [platform]);
+  }, []);
 
   const fetchProblems = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const url = platform === 'all'
-        ? 'http://localhost:9000/api/problems'
-        : `http://localhost:9000/api/problems/platform/${platform}`;
-      
-      const response = await axios.get(url, { withCredentials: true });
-      if (response.data) {
-        setProblems(response.data);
-      } else {
-        setError('No coding problems found');
-      }
+      const response = await axios.get('/api/problems');
+      setProblems(response.data);
     } catch (error) {
       console.error('Error fetching problems:', error);
-      setError(error.response?.data?.message || 'Failed to fetch coding problems');
-    } finally {
-      setLoading(false);
+      toast.error('Failed to fetch coding problems');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:9000/api/problems', newProblem);
+      const response = await axios.post('/api/problems', newProblem);
+      setProblems([...problems, response.data]);
       setNewProblem({
         title: '',
-        platform: 'leetcode',
+        description: '',
         difficulty: 'medium',
-        link: '',
-        assignedTo: '',
+        category: 'algorithms'
       });
-      fetchProblems();
+      toast.success('Problem added successfully!');
     } catch (error) {
       console.error('Error adding problem:', error);
+      toast.error('Failed to add problem');
     }
   };
 
   const handleStatusChange = async (problemId, newStatus) => {
     try {
-      await axios.patch(`http://localhost:9000/api/problems/${problemId}`, {
-        status: newStatus,
-      });
-      fetchProblems();
+      await axios.patch(`/api/problems/${problemId}`, { status: newStatus });
+      setProblems(problems.map(problem =>
+        problem._id === problemId ? { ...problem, status: newStatus } : problem
+      ));
+      toast.success('Problem status updated');
     } catch (error) {
       console.error('Error updating problem status:', error);
+      toast.error('Failed to update problem status');
     }
   };
 
-  const getDifficultyColor = (difficulty) => {
-    const colors = {
-      easy: 'success',
-      medium: 'warning',
-      hard: 'error',
-    };
-    return colors[difficulty] || 'default';
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setNewProblem(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Coding Problems
-        </Typography>
-        <FormControl sx={{ minWidth: 200, mb: 3 }}>
-          <InputLabel>Platform</InputLabel>
-          <Select
-            value={platform}
-            label="Platform"
-            onChange={(e) => setPlatform(e.target.value)}
+    <div className="max-w-4xl mx-auto p-4">
+      <div className="mb-8 bg-white p-6 rounded-lg shadow">
+        <h2 className="text-2xl font-bold mb-4">Add New Coding Problem</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Title</label>
+            <input
+              type="text"
+              name="title"
+              value={newProblem.title}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <textarea
+              name="description"
+              value={newProblem.description}
+              onChange={handleChange}
+              rows="4"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Difficulty</label>
+              <select
+                name="difficulty"
+                value={newProblem.difficulty}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Category</label>
+              <select
+                name="category"
+                value={newProblem.category}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="algorithms">Algorithms</option>
+                <option value="data-structures">Data Structures</option>
+                <option value="strings">Strings</option>
+                <option value="arrays">Arrays</option>
+                <option value="dynamic-programming">Dynamic Programming</option>
+              </select>
+            </div>
+          </div>
+          
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            <MenuItem value="all">All Platforms</MenuItem>
-            <MenuItem value="leetcode">LeetCode</MenuItem>
-            <MenuItem value="hackerrank">HackerRank</MenuItem>
-            <MenuItem value="codewars">CodeWars</MenuItem>
-          </Select>
-        </FormControl>
-        
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Add New Problem
-            </Typography>
-            <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Title"
-                    value={newProblem.title}
-                    onChange={(e) => setNewProblem({ ...newProblem, title: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Link"
-                    value={newProblem.link}
-                    onChange={(e) => setNewProblem({ ...newProblem, link: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth>
-                    <InputLabel>Platform</InputLabel>
-                    <Select
-                      value={newProblem.platform}
-                      label="Platform"
-                      onChange={(e) => setNewProblem({ ...newProblem, platform: e.target.value })}
-                    >
-                      <MenuItem value="leetcode">LeetCode</MenuItem>
-                      <MenuItem value="hackerrank">HackerRank</MenuItem>
-                      <MenuItem value="codewars">CodeWars</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth>
-                    <InputLabel>Difficulty</InputLabel>
-                    <Select
-                      value={newProblem.difficulty}
-                      label="Difficulty"
-                      onChange={(e) => setNewProblem({ ...newProblem, difficulty: e.target.value })}
-                    >
-                      <MenuItem value="easy">Easy</MenuItem>
-                      <MenuItem value="medium">Medium</MenuItem>
-                      <MenuItem value="hard">Hard</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Assigned To"
-                    value={newProblem.assignedTo}
-                    onChange={(e) => setNewProblem({ ...newProblem, assignedTo: e.target.value })}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button type="submit" variant="contained" color="primary">
-                    Add Problem
-                  </Button>
-                </Grid>
-              </Grid>
-            </form>
-          </CardContent>
-        </Card>
-      </Box>
+            Add Problem
+          </button>
+        </form>
+      </div>
 
-      {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <Typography>Loading coding problems...</Typography>
-        </Box>
-      )}
-      
-      {error && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <Typography color="error">{error}</Typography>
-        </Box>
-      )}
-
-      {!loading && !error && problems.length === 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <Typography>No coding problems found. Add a new problem to get started!</Typography>
-        </Box>
-      )}
-
-      {!loading && !error && problems.length > 0 && (
-        <Grid container spacing={3}>
-          {problems.map((problem) => (
-            <Grid item xs={12} sm={6} md={4} key={problem._id}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" component="div">
-                    {problem.title}
-                  </Typography>
-                  <Box sx={{ my: 1 }}>
-                    <Chip
-                      label={problem.platform}
-                      color="primary"
-                      size="small"
-                      sx={{ mr: 1 }}
-                    />
-                    <Chip
-                      label={problem.difficulty}
-                      color={getDifficultyColor(problem.difficulty)}
-                      size="small"
-                    />
-                  </Box>
-                  <Typography color="text.secondary" sx={{ mb: 1 }}>
-                    Assigned to: {problem.assignedTo}
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    href={problem.link}
-                    target="_blank"
-                    sx={{ mb: 2 }}
-                  >
-                    View Problem
-                  </Button>
-                  <Box>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      color={problem.status === 'completed' ? 'success' : 'primary'}
-                      onClick={() => handleStatusChange(
-                        problem._id,
-                        problem.status === 'completed' ? 'pending' : 'completed'
-                      )}
-                      fullWidth
-                    >
-                      {problem.status === 'completed' ? 'Completed' : 'Mark as Complete'}
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
-    </Container>
+      <div className="space-y-4">
+        {problems.map(problem => (
+          <div key={problem._id} className="bg-white p-6 rounded-lg shadow">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-semibold">{problem.title}</h3>
+                <p className="text-gray-600 mt-2">{problem.description}</p>
+                <div className="mt-4 space-x-2">
+                  <span className={`px-2 py-1 rounded text-sm ${
+                    problem.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                    problem.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {problem.difficulty}
+                  </span>
+                  <span className="px-2 py-1 rounded text-sm bg-gray-100 text-gray-800">
+                    {problem.category}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-x-2">
+                <button
+                  onClick={() => handleStatusChange(problem._id, 'in-progress')}
+                  className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                >
+                  Start
+                </button>
+                <button
+                  onClick={() => handleStatusChange(problem._id, 'completed')}
+                  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                  Complete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 

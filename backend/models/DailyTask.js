@@ -5,7 +5,7 @@ const commentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  createdBy: {
+  author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
@@ -19,42 +19,54 @@ const commentSchema = new mongoose.Schema({
 const dailyTaskSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   description: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
-  createdBy: {
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'medium'
+  },
+  status: {
+    type: String,
+    enum: ['todo', 'in-progress', 'completed', 'reviewed'],
+    default: 'todo'
+  },
+  dueDate: {
+    type: Date,
+    required: true,
+    default: () => new Date(new Date().setHours(23, 59, 59, 999)) // End of current day
+  },
+  assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  assignee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  assigneeEmail: {
-    type: String,
-    required: true
-  },
   supervisor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'in_progress', 'completed', 'reviewed'],
-    default: 'pending'
-  },
-  date: {
-    type: Date,
+    ref: 'User',
     required: true
   },
   comments: [commentSchema],
-  lastNotified: {
-    type: Date
-  }
+  progress: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
+  attachments: [{
+    filename: String,
+    path: String,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });

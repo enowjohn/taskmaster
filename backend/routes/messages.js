@@ -10,8 +10,8 @@ router.get('/conversations', async (req, res) => {
       {
         $match: {
           $or: [
-            { sender: req.user._id },
-            { recipient: req.user._id }
+            { sender: req.user.userId },
+            { recipient: req.user.userId }
           ]
         }
       },
@@ -22,7 +22,7 @@ router.get('/conversations', async (req, res) => {
         $group: {
           _id: {
             $cond: {
-              if: { $eq: ['$sender', req.user._id] },
+              if: { $eq: ['$sender', req.user.userId] },
               then: '$recipient',
               else: '$sender'
             }
@@ -49,13 +49,13 @@ router.get('/conversations', async (req, res) => {
   }
 });
 
-// Get messages between current user and another user
+// Get messages between two users
 router.get('/:userId', async (req, res) => {
   try {
     const messages = await Message.find({
       $or: [
-        { sender: req.user._id, recipient: req.params.userId },
-        { sender: req.params.userId, recipient: req.user._id }
+        { sender: req.user.userId, recipient: req.params.userId },
+        { sender: req.params.userId, recipient: req.user.userId }
       ]
     })
     .sort({ createdAt: 1 })
@@ -68,35 +68,29 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
-// Send a message
+// Create a new message
 router.post('/', async (req, res) => {
   try {
     const { recipientId, content } = req.body;
 
     const message = new Message({
-      sender: req.user._id,
+      sender: req.user.userId,
       recipient: recipientId,
-      content
+      content: content,
+      timestamp: new Date()
     });
 
     await message.save();
 
+    // Populate sender and recipient information
     const populatedMessage = await Message.findById(message._id)
       .populate('sender', 'name email')
       .populate('recipient', 'name email');
 
-    // Notify through WebSocket if recipient is connected
-    const recipientSocket = req.app.get('wsClients').get(recipientId);
-    if (recipientSocket) {
-      recipientSocket.send(JSON.stringify({
-        type: 'message',
-        message: populatedMessage
-      }));
-    }
-
     res.status(201).json(populatedMessage);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error creating message:', error);
+    res.status(500).json({ message: error.message });
   }
 });
 
