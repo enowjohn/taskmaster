@@ -22,7 +22,7 @@ initializeSocket(httpServer);
 const corsOptions = {
   origin: function(origin, callback) {
     const allowedOrigins = [
-      'http://localhost:3000',
+      'http://localhost:3001',
       'http://localhost:5173', 
       'https://taskmaster-app.onrender.com',
       'https://taskmaster-api-39px.onrender.com'
