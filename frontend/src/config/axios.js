@@ -1,11 +1,14 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-const API_URL = 'http://localhost:9000';
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://taskmaster-api-39px.onrender.com'
+  : 'http://localhost:9000';
 
 // Create axios instance with default config
 const instance = axios.create({
   baseURL: API_URL,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
