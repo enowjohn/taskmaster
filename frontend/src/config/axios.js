@@ -1,14 +1,19 @@
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 // Create axios instance with default config
 const instance = axios.create({
-  baseURL: 'http://localhost:9000',
+  baseURL: API_URL,
+  timeout: 1000000,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   },
-  withCredentials: true,
-  timeout: 10000 // 10 second timeout
+  transformRequest: [(data) => {
+    return JSON.stringify(data);
+  }],
+  withCredentials: true
 });
 
 // Add request interceptor
@@ -22,7 +27,6 @@ instance.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -31,37 +35,17 @@ instance.interceptors.request.use(
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('Response error:', error);
+    const message = error.response?.data?.message || 'An error occurred';
     
-    // Handle network errors
-    if (!error.response) {
-      toast.error('Network error. Please check your connection and try again.');
-      return Promise.reject(new Error('Network error'));
+    // Handle unauthorized errors
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
     }
-
-    // Handle specific status codes
-    switch (error.response.status) {
-      case 400:
-        toast.error(error.response.data.message || 'Invalid request');
-        break;
-      case 401:
-        toast.error('Please login to continue');
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        break;
-      case 403:
-        toast.error('Access denied');
-        break;
-      case 404:
-        toast.error('Resource not found');
-        break;
-      case 500:
-        toast.error(error.response.data.message || 'Server error. Please try again later.');
-        break;
-      default:
-        toast.error('Something went wrong. Please try again.');
-    }
-
+    
+    // Show error toast
+    // toast.error(message);
+    
     return Promise.reject(error);
   }
 );

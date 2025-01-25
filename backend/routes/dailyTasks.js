@@ -70,7 +70,7 @@ router.post('/', async (req, res) => {
         <p><strong>Title:</strong> ${title}</p>
         <p><strong>Description:</strong> ${description}</p>
         <p><strong>Due Date:</strong> ${new Date(date).toLocaleDateString()}</p>
-        ${!assignee ? '<p><a href="http://localhost:3000/register">Click here to create your account</a></p>' : ''}
+        ${!assignee ? '<p><a href="http://localhost:3001/register">Click here to create your account</a></p>' : ''}
       `
     });
 
@@ -104,7 +104,7 @@ router.patch('/:id/status', async (req, res) => {
         html: `
           <h2>Task Ready for Review</h2>
           <p>The task "${task.title}" has been marked as ready for review.</p>
-          <p><a href="http://localhost:3000/dashboard/daily-tasks">Click here to review the task</a></p>
+          <p><a href="http://localhost:3001/dashboard/daily-tasks">Click here to review the task</a></p>
         `
       });
     }
@@ -140,7 +140,7 @@ router.post('/:id/comment', async (req, res) => {
           <h2>New Task Comment</h2>
           <p>You have received a new comment on your task "${task.title}":</p>
           <p><strong>Comment:</strong> ${comment}</p>
-          <p><a href="http://localhost:3000/dashboard/daily-tasks">Click here to view the task</a></p>
+          <p><a href="http://localhost:3001/dashboard/daily-tasks">Click here to view the task</a></p>
         `
       });
     }

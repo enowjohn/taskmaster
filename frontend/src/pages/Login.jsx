@@ -12,9 +12,13 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      const userData = await login(email, password);
+      if (userData) {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to login');
     }

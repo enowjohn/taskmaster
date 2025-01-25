@@ -1,10 +1,20 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from '../config/axios';
+import { toast } from 'react-hot-toast';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
+// Custom hook for using auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+// Auth Provider component
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -15,13 +25,26 @@ export function AuthProvider({ children }) {
   const checkAuth = async () => {
     try {
       const token = localStorage.getItem('token');
-      if (token) {
-        const response = await axios.get('/api/auth/me');
-        setUser(response.data);
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.get('/api/auth/me');
+      if (response.data) {
+        // Only set user if on a protected route
+        const protectedRoutes = ['/dashboard', '/tasks', '/problems', '/inbox', '/account'];
+        if (protectedRoutes.some(route => window.location.pathname.startsWith(route))) {
+          setUser(response.data);
+        } else {
+          // Clear token if not on a protected route
+          localStorage.removeItem('token');
+        }
       }
     } catch (error) {
-      console.error('Auth check error:', error);
+      console.error('Auth check failed:', error);
       localStorage.removeItem('token');
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -31,62 +54,57 @@ export function AuthProvider({ children }) {
     try {
       const response = await axios.post('/api/auth/login', {
         email,
-        password
+        password,
       });
-      
-      if (response.data.token && response.data.user) {
-        localStorage.setItem('token', response.data.token);
-        setUser(response.data.user);
-        toast.success('Successfully logged in!');
-        return response.data;
-      } else {
-        throw new Error('Invalid response from server');
-      }
+
+      const { token, user: userData } = response.data;
+      localStorage.setItem('token', token);
+      setUser(userData);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      toast.success('Login successful!');
+      return userData;
     } catch (error) {
       console.error('Login error:', error);
-      const message = error.response?.data?.message || 'Login failed. Please try again.';
+      const message = error.response?.data?.message || 'Login failed';
       toast.error(message);
       throw error;
     }
   };
 
-  const register = async (name, email, password) => {
+  const register = async (userData) => {
     try {
-      const response = await axios.post('/api/auth/register', {
-        name,
-        email,
-        password
-      });
-      
-      if (response.data.token && response.data.user) {
-        localStorage.setItem('token', response.data.token);
-        setUser(response.data.user);
-        toast.success('Successfully registered!');
-        return response.data;
-      } else {
-        throw new Error('Invalid response from server');
-      }
+      const response = await axios.post('/api/auth/register', userData);
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      setUser(user);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      toast.success('Registration successful!');
+      return true;
     } catch (error) {
       console.error('Registration error:', error);
-      const message = error.response?.data?.message || 'Registration failed. Please try again.';
+      const message = error.response?.data?.message || 'Registration failed';
       toast.error(message);
-      throw error;
+      return false;
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
-    toast.success('Successfully logged out!');
+    delete axios.defaults.headers.common['Authorization'];
+    toast.success('Logged out successfully');
   };
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
+  const value = {
+    user,
+    loading,
+    login,
+    register,
+    logout,
+    checkAuth
+  };
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export default AuthProvider;

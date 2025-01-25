@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiCode, FiCheckCircle, FiTrendingUp, FiAward, FiGithub, FiCpu } from 'react-icons/fi';
-
 const features = [
   {
     icon: <FiCode className="w-6 h-6" />,
@@ -59,7 +58,7 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImEiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcGF0dGVyblRyYW5zZm9ybT0icm90YXRlKDQ1KSI+PHBhdGggZD0iTTAgMGgyMHYyMEgweiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0tMSAxaDIydjIySC0xeiIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiIHN0cm9rZS13aWR0aD0iMC41Ii8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2EpIi8+PC9zdmc+')] opacity-20"></div>
         </div>
         
-        {/* Navigation */}
+        
         <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           <div className="flex items-center space-x-2">
             <FiCpu className="w-8 h-8 text-purple-400" />
@@ -76,7 +75,7 @@ export default function LandingPage() {
           </div>
         </nav>
 
-        {/* Hero Content */}
+        
         <div className="relative z-10 px-6 py-32 md:py-48 max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -85,11 +84,10 @@ export default function LandingPage() {
             className="text-center"
           >
             <h1 className="text-5xl md:text-7xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
-              Master Your Coding Journey
+            Daily Goals, Daily Growth
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
-              Track your progress, solve challenges, and become a better programmer with our comprehensive coding practice platform.
-            </p>
+            Track your progress, tackle daily tasks, and become more organized with our comprehensive task management platform.            </p>
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="inline-block"
@@ -98,14 +96,14 @@ export default function LandingPage() {
                 to="/register"
                 className="px-8 py-4 text-lg rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition shadow-lg text-white"
               >
-                Start Coding Now
+               Your Daily Success Plan
               </Link>
             </motion.div>
           </motion.div>
         </div>
       </div>
 
-      {/* Features Section */}
+      
       <div className="w-full py-24 px-6 max-w-7xl mx-auto backdrop-blur-sm bg-white/5 rounded-3xl my-12 mx-4 sm:mx-8">
         <h2 className="text-4xl font-bold text-center mb-16">Powerful Features</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -197,7 +195,7 @@ export default function LandingPage() {
             <a href="#" className="text-gray-400 hover:text-white transition">Features</a>
             <a href="#" className="text-gray-400 hover:text-white transition">Contact</a>
             <a
-              href="https://github.com"
+              href="https://github.com/enowjohn"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-400 hover:text-white transition"

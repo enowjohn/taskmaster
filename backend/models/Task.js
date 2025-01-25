@@ -1,5 +1,19 @@
 const mongoose = require('mongoose');
 
+const CommentSchema = new mongoose.Schema({
+  content: {
+    type: String,
+    required: true
+  },
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
+}, {
+  timestamps: true
+});
+
 const TaskSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -10,32 +24,40 @@ const TaskSchema = new mongoose.Schema({
     required: true
   },
   assignedTo: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
   supervisor: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
   status: {
     type: String,
-    enum: ['pending', 'in-progress', 'completed'],
-    default: 'pending'
+    enum: ['todo', 'in-progress', 'completed', 'reviewed'],
+    default: 'todo'
   },
-  dueDate: {
-    type: Date,
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'medium'
+  },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  dueTime: {
+    type: String,
     required: true
   },
   completedAt: {
     type: Date
   },
-  link: {
-    type: String
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  comments: [CommentSchema]
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('Task', TaskSchema);

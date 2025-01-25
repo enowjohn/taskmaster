@@ -20,6 +20,7 @@ import {
   LinearProgress,
   Alert,
   Tooltip,
+  Badge,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,7 +35,6 @@ import {
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import axios from '../config/axios';
 import { useAuth } from '../context/AuthContext';
-import { toast } from 'react-hot-toast';
 
 const priorityColors = {
   high: '#f44336',
@@ -48,7 +48,7 @@ const priorityIcons = {
   low: <FlagIcon style={{ color: priorityColors.low }} />,
 };
 
-const DailyTaskPage = () => {
+const DailyTasks = () => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [open, setOpen] = useState(false);
@@ -69,15 +69,12 @@ const DailyTaskPage = () => {
 
   const fetchTasks = async () => {
     try {
-      console.log('Fetching tasks...');
       const response = await axios.get('/api/daily-tasks');
-      console.log('Tasks received:', response.data);
       setTasks(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching tasks:', error);
       setError('Failed to load tasks. Please try again.');
-      toast.error('Failed to load tasks');
       setLoading(false);
     }
   };
@@ -103,11 +100,9 @@ const DailyTaskPage = () => {
         });
 
         setSuccess(`Task moved to ${newStatus.replace('-', ' ')}`);
-        toast.success(`Task moved to ${newStatus.replace('-', ' ')}`);
       } catch (error) {
         console.error('Error updating task status:', error);
         setError('Failed to update task status. Please try again.');
-        toast.error('Failed to update task status');
         fetchTasks(); // Revert to server state
       }
     }
@@ -149,18 +144,15 @@ const DailyTaskPage = () => {
           task._id === editTask._id ? response.data : task
         ));
         setSuccess('Task updated successfully!');
-        toast.success('Task updated successfully!');
       } else {
         const response = await axios.post('/api/daily-tasks', formData);
         setTasks([response.data, ...tasks]);
         setSuccess('Task created successfully!');
-        toast.success('Task created successfully!');
       }
       handleClose();
     } catch (error) {
       console.error('Error saving task:', error);
       setError(error.response?.data?.message || 'Error saving task. Please try again.');
-      toast.error(error.response?.data?.message || 'Error saving task');
     }
   };
 
@@ -169,11 +161,9 @@ const DailyTaskPage = () => {
       await axios.delete(`/api/daily-tasks/${taskId}`);
       setTasks(tasks.filter(task => task._id !== taskId));
       setSuccess('Task deleted successfully!');
-      toast.success('Task deleted successfully!');
     } catch (error) {
       console.error('Error deleting task:', error);
       setError('Failed to delete task. Please try again.');
-      toast.error('Failed to delete task');
     }
   };
 
@@ -207,11 +197,7 @@ const DailyTaskPage = () => {
   };
 
   if (loading) {
-    return (
-      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-        <LinearProgress />
-      </Container>
-    );
+    return <LinearProgress />;
   }
 
   return (
@@ -387,4 +373,4 @@ const DailyTaskPage = () => {
   );
 };
 
-export default DailyTaskPage;
+export default DailyTasks;

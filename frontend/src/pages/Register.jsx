@@ -20,14 +20,26 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
+
     try {
-      await register(formData.name, formData.email, formData.password);
-      navigate('/dashboard');
+      const userData = {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password
+      };
+      
+      const success = await register(userData);
+      if (success) {
+        navigate('/dashboard');
+      }
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err.response?.data?.message || 'Failed to register');
     }
   };
