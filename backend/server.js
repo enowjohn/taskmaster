@@ -18,14 +18,19 @@ const httpServer = createServer(app);
 // Initialize Socket.IO
 initializeSocket(httpServer);
 
+
 // CORS configuration
 const corsOptions = {
   origin: function(origin, callback) {
+    // console.log({ origin, url:  process.env.FRONT_END_URL, });
+
+
     const allowedOrigins = [
       'http://localhost:3001',
-      'http://localhost:5173', 
+      'http://localhost:5173',
       'https://taskmaster-app.onrender.com',
-      'https://taskmaster-api-39px.onrender.com'
+      'https://coding-tasks-api.onrender.com',
+      // process.env.FRONT_END_URL,
     ];
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
@@ -145,7 +150,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 9000;
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
