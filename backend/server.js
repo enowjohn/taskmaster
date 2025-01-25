@@ -30,6 +30,7 @@ const corsOptions = {
       'http://localhost:5173',
       'https://taskmaster-app.onrender.com',
       'https://coding-tasks-api.onrender.com',
+        'https://taskmaster-22yfc6qsg-enow-john-enowbis-projects.vercel.app',
       // process.env.FRONT_END_URL,
     ];
     // Allow requests with no origin (like mobile apps or curl requests)
